@@ -1,0 +1,8 @@
+{
+  "name":"rega-microlearning",
+  "version":"1.0.0",
+  "private":true,
+  "type":"module",
+  "scripts":{"start":"node scripts/serve.mjs","test":"node --test tests/core.test.mjs","test:browser":"node tests/browser.mjs","icons":"node scripts/icons.mjs","prepare:pages":"node scripts/prepare-pages.mjs"},
+  "devDependencies":{"@playwright/test":"1.63.0","pngjs":"7.0.0"}
+}
