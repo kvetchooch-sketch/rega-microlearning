@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {spawn} from 'node:child_process';
+import {FACTS} from '../dist/content.mjs';
 const {chromium,webkit,expect}=await import('@playwright/test');
 const output=new URL('../test-results/',import.meta.url);await fs.mkdir(output,{recursive:true});
 const base=process.env.TEST_URL||'http://127.0.0.1:4174/';
@@ -59,7 +60,7 @@ for(const [name,type,options] of [['chromium',chromium,process.platform==='win32
   await page.locator('[data-action=cancel-edit]').click();
   await page.locator('[data-route=feed]').click();
   const seen=new Set([firstID]);
-  for(let i=0;i<23;i++){await page.locator('[data-action=next]').click();const id=await page.locator('.fact-card').getAttribute('data-fact');assert.ok(!seen.has(id),'duplicate in normal feed');seen.add(id);}
+  for(let i=0;i<FACTS.length-1;i++){await page.locator('[data-action=next]').click();const id=await page.locator('.fact-card').getAttribute('data-fact');assert.ok(!seen.has(id),'duplicate in normal feed');seen.add(id);}
   await page.locator('[data-action=next]').click();await expect(page.locator('.empty h2')).toHaveText('הגעת לסוף האוסף');
   await page.locator('[data-action=review]').click();await expect(page.locator('.review-label')).toBeVisible();
   await page.locator('[data-route=settings]').click();await page.locator('[data-action=reset]').click();await page.locator('[data-action=close]').click();

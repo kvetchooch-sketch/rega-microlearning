@@ -24,4 +24,20 @@ Evidence reviewed:
 
 All records include clickable source URLs. Re-review links and wording before a public-scale release. The content format supports qualified claims and time-sensitive expiration; the current pack avoids changing officeholders, prices, laws, rankings and model capabilities.
 
-The original 100-entry target remains unmet by the reviewed release (24 cards). Increasing the count must go through source retrieval and review, not re-labeling the legacy draft library.
+## Expansion · 26 September 2026
+
+38 additional cards in `dist/content-expansion.mjs` bring the total to 62. All previously selectable topics now have at least four cards. The original 100-card target remains unmet; no unreviewed legacy drafts were promoted to fill the gap.
+
+Sources retrieved or checked through primary-source search excerpts on this date:
+
+- NIST AI use cases, synthetic content research, and AI bias: content creation, patterns in training examples, artificial imagery, and harmful bias. No changing model capability rankings. Bias page retrieval failed; the indexed NIST excerpt confirmed its research focus.
+- NASA Mars Facts: oxidized iron, orbital period and seasons. NASA Earth Facts: plate motion. Smithsonian octopus page: three hearts.
+- USGS surface tension and water-cycle poster: molecular attraction and phase changes. NOAA global-ocean page: connected ocean and 71% surface coverage.
+- CERN birth-of-Web and browser-history pages: first site's purpose, 2013 restoration, 1990 browser, server/browser components.
+- NASA Katherine G. Johnson biography and Nobel Curie biography: backup navigation and polonium's name. Nobel evidence was available through primary-source indexed text.
+- OpenStax independent-events and percent-application chapters: definitions checked; all numerical examples independently calculated. OpenStax attribution and license included in source labels; examples are original adaptations.
+- Cornell library research guide: questions, search terms, traceable citations. W3C writing guide: descriptive links and headings.
+- SBA planning and startup-cost guides: original-data limitations, interviews, indirect competitors, startup reserves, equipment costs and customer value. These are sourced planning suggestions, not guarantees of business success or individualized financial advice.
+- National Archives: original 1787 text, Article I sections 1–3 and 9. Cards explicitly describe the historical document rather than asserting all provisions as current law.
+
+The two original AI-related cards were rewritten in everyday Hebrew without changing the sourced claim. New cards retain their actual 26 September verification date; old records retain 25 September. The app formats the stored date rather than displaying a fixed date for every card. Editorial implications remain labeled in the detail screen.

@@ -15,7 +15,7 @@ Safari and the installed web app can have separate storage. Install first, then 
 - Local configurable 70/20/10 exploration policy. First card honors interests. Votes replace rather than accumulate. No automatic repeats; explicit review mode after exhaustion.
 - Learning statistics and a knowledge map; no intelligence score.
 - Light, dark and system themes, reduced motion, 44px controls, semantic buttons/dialogs.
-- 24 source-checked Hebrew cards, 33 extensible category definitions. Only populated topics are selectable.
+- 62 source-checked Hebrew cards, 33 extensible category definitions. Every selectable topic has at least four cards. AI wording assumes no technical background.
 - Factual metadata includes citations, dates, verification state, difficulty, tags and freshness. Time-sensitive content is withheld after nextReviewAt. These initial records are evergreen.
 
 The earlier native project's 112 candidate records were not fully source-audited. They are deliberately excluded from this release. The shipped set is smaller because a citation-shaped URL is not verification.

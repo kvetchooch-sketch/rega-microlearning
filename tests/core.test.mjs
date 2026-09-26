@@ -2,7 +2,13 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {blankProfile,normalizeProfile,loadProfile,saveProfile,isEligible,nextFact,ensureInteraction,setReaction,toggleSaved,affinity,statistics,isValidMix} from '../dist/core.mjs';
 import {FACTS,CATEGORIES,AVAILABLE_CATEGORIES} from '../dist/content.mjs';
-const now=new Date('2026-09-25T12:00:00Z');
+const now=new Date('2026-09-26T12:00:00Z');
+
+test('every offered topic has at least four distinct readable cards',()=>{
+ for(const c of AVAILABLE_CATEGORIES)assert.ok(FACTS.filter(f=>f.category===c.id).length>=4,c.id);
+ assert.equal(new Set(FACTS.map(f=>f.shortFact)).size,FACTS.length);
+ for(const f of FACTS.filter(f=>f.category==='ai'))assert.doesNotMatch(f.shortFact+' '+f.summary+' '+f.explanation,/confabulation|גנרטיבי|אסמכתה|LLM/);
+});
 test('all published facts have complete source-checked metadata',()=>{
  assert.equal(new Set(FACTS.map(f=>f.id)).size,FACTS.length);assert.equal(CATEGORIES.length,33);
  for(const f of FACTS){assert.ok(isEligible(f,now),f.id);for(const key of ['title','shortFact','summary','explanation','whyItMatters','dateVerified','createdAt','updatedAt'])assert.ok(f[key],f.id+key);assert.ok(CATEGORIES.some(c=>c.id===f.category));assert.ok(f.shortFact.length<180);}
