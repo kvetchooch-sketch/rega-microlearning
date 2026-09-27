@@ -2,5 +2,9 @@ node_modules/
 test-results/
 .DS_Store
 .env
+.wrangler/
+.dev.vars
+.dev.vars.*
+push/secrets*.json
 .env.*
 !.env.example

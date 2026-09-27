@@ -19,4 +19,15 @@ The first browser test failed because a selector counted related cards inside a 
 
 WebKit offline emulation initially failed with an internal engine error. This matches the confirmed Playwright 1.63 issue [#42775](https://github.com/microsoft/playwright/issues/42775), including failure even for service-worker responses requiring no network. The WebKit connectivity test therefore stops the actual local test origin. This is recorded as origin unavailability, **not** equivalent to full offline emulation. Chromium's offline emulation passed.
 
-Physical iPhone installation, iPhone VoiceOver, push delivery and native iOS compilation were not tested. No claim of on-device verification is made.
+Physical iPhone installation, iPhone VoiceOver, delivery to a locked iPhone and native iOS compilation were not tested. No claim of on-device verification is made.
+
+## Push release · 27 September 2026
+
+- 25 Node tests passed: 13 app tests plus 12 backend/helper tests. Coverage includes SSRF host checks, malformed keys, permission/owner separation, pairing, cross-origin rejection, time zones including DST and quarter-hour offsets, test cooldown, atomic scheduling, expired endpoints, encryption/signing and safe click URLs.
+- Four complete app journeys passed again on Chromium and WebKit at two mobile widths; upgrade from the previous published version preserved bookmarks/reactions.
+- Two notification UI journeys passed, using mock browser subscription APIs and an isolated HTTP test backend. They exercise permission during a real click, invalid code, selected-topic-only payload, preference persistence, delayed test, rate-limit feedback, deletion and fact deep links. Chromium also verifies offline deep-link reload.
+- The initial WebKit test harness failed because its request interception did not handle a cross-origin preflight like Chromium; its request reached the real service, which correctly rejected the localhost origin. Moving the mock to an isolated same-origin HTTP test server resolved the harness issue without relaxing production CORS.
+- Private signing keys were generated and piped directly to Cloudflare secrets; no private key file was created in the repository.
+- A live scheduled synthetic-endpoint probe caught a Workers-specific `fetch` incompatibility: `redirect: 'error'` is not supported at the edge. Changed it to `manual`; 3xx responses are failures and are never followed, preserving endpoint/credential isolation. Unit tests now assert this mode and independently decrypt the generated payload and verify the VAPID signature.
+
+Synthetic service tests and desktop tests are not proof of end-to-end iPhone delivery. The final acceptance step is user-initiated activation followed by “בדיקה בעוד דקה”, locking the iPhone, receiving the notification and tapping it.

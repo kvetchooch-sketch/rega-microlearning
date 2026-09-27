@@ -1,0 +1,12 @@
+{
+ "name":"rega-push",
+ "main":"worker.mjs",
+ "account_id":"6f69f8d3914267ed88ae3235f11b855c",
+ "compatibility_date":"2026-09-26",
+ "compatibility_flags":["nodejs_compat"],
+ "workers_dev":true,
+ "preview_urls":false,
+ "observability":{"enabled":false},
+ "triggers":{"crons":["* * * * *"]},
+ "d1_databases":[{"binding":"DB","database_name":"rega-push","database_id":"fc802613-ace5-4d42-9585-deb7b3db899c"}]
+}

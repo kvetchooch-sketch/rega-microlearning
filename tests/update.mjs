@@ -46,5 +46,5 @@ try{
  await expect(page.locator('.fact-card')).toBeVisible();
  await context.setOffline(true);await page.reload();
  await expect(page.locator('.card-meta')).toContainText(String(FACTS.length));
- console.log('PASS: production v1 -> v2 update, bookmarks/interests/reaction preserved, update button, expanded offline cache.');
+console.log('PASS: production v1 -> current update, bookmarks/interests/reaction preserved, update button, expanded offline cache.');
 }finally{await browser?.close();await new Promise(resolve=>server.close(resolve));}

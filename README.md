@@ -22,7 +22,9 @@ The earlier native project's 112 candidate records were not fully source-audited
 
 ## Limits
 
-This is a Home Screen web app, not an App Store binary. Native widgets, Live Activities and unlock interception are not implemented. Cadence is labeled as a personal goal; this static version does not send notifications. Web Push would require an additional server delivery service and explicit permission. No LLM publishes content directly.
+This is a Home Screen web app, not an App Store binary. Native widgets, Live Activities and unlock interception are not implemented. Optional Web Push now uses the separate Cloudflare Worker in `push/`; activation requires an individual pairing code and notification permission. Daily or three-times-daily delivery, a delayed test, and deletion are available in Preferences. No LLM publishes content directly. Physical locked-iPhone delivery must still be confirmed by the user.
+
+Push privacy: only delivery address/keys, selected topics, time zone, frequency, sent-notification IDs and operational status leave the device when enabled. Bookmarks, reactions and reading history remain local. Notifications may repeat a fact read in the feed, because the histories are intentionally not synchronized. Push registrations expire after 90 days unless preferences are saved again. Changing learning interests requires saving notification settings to update delivery topics.
 
 ## Development and deployment
 
@@ -33,3 +35,9 @@ GitHub Pages publishes the generated `docs/` directory from the main branch. Aft
 `npm run test:browser` runs isolated mobile flows. Install the test engines with `npx playwright install chromium webkit`. On Windows the tests use installed Edge for Chromium. Tests never access an existing personal browser profile.
 
 Sources and content review notes: `CONTENT_REVIEW.md`. Platform restrictions: `PLATFORM.md`.
+
+## Notification service
+
+`npm ci --prefix push`, then `node --test push/tests/push.test.mjs` runs the backend policy/security tests. `node tests/push-browser.mjs` tests notification UI in Chromium and WebKit with a local mocked transport (not physical delivery). The existing `npm test`, browser and update regression tests remain available.
+
+Deployment configuration is `push/wrangler.jsonc`; D1 schema is `push/schema.sql`. This deployment uses Workers Free and D1 Free, no paid services or billing activation. The private signing key and enrollment code are Cloudflare secrets, never in `dist/`, `docs/`, Git or browser bundles. Deployment should preserve those secrets. Do not rotate VAPID keys without a subscription migration plan.
