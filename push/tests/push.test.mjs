@@ -94,6 +94,7 @@ test('real Web Push encryption produces signed encrypted request and blocks redi
   const sub={endpoint:'https://web.push.apple.com/test-only-endpoint',keys:{p256dh:receiver.getPublicKey().toString('base64url'),auth}};
   const status=await sendPush(env,sub,{body:'private sample',tag:'rega-test'},async(url,options)=>{
    assert.equal(options.redirect,'manual');assert.equal(options.headers['Content-Encoding'],'aes128gcm');assert.match(options.headers.Authorization,/^vapid /);
+   assert.equal(options.headers.Topic,undefined,'UI tag must not be sent as an unencoded Web Push Topic');
    assert.ok(options.body.length>20);assert.ok(!options.body.includes(Buffer.from('private sample')));
    const plain=ece.decrypt(options.body,{version:'aes128gcm',privateKey:receiver,authSecret:auth});assert.equal(JSON.parse(plain).body,'private sample');
    const jwt=options.headers.Authorization.match(/t=([^,]+)/)[1],segments=jwt.split('.'),pub=Buffer.from(pair.publicKey,'base64url');
@@ -102,6 +103,13 @@ test('real Web Push encryption produces signed encrypted request and blocks redi
    assert.equal(JSON.parse(Buffer.from(segments[1],'base64url')).aud,'https://web.push.apple.com');
    return new Response(null,{status:201});
   });assert.equal(status,201);
+ }finally{db.close();}
+});
+test('provider diagnostics are allowlisted and expired endpoints keep numeric cleanup status',async()=>{
+ const {db,env}=fixture();try{
+  for(const [status,reason,expected] of [[400,'BadWebPushTopic','400_BadWebPushTopic'],[400,'BadWebPushRequest','400_BadWebPushRequest'],[400,'private endpoint or token',400],[404,'BadPath',404],[410,'BadPath',410]]){
+   assert.equal(await sendPush(env,body().subscription,{tag:'rega-test'},async()=>Response.json({reason},{status})),expected);
+  }
  }finally{db.close();}
 });
 test('notification helper prevents external navigation and degrades malformed/expired payloads visibly',()=>{

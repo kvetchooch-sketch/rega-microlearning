@@ -5,11 +5,20 @@ const json=(data,status=200)=>Response.json(data,{status,headers:cors});
 export async function sendPush(env,subscription,payload,transport=fetch){
  let stage='encryption';
  try{
-  const request=webpush.generateRequestDetails(validateSubscription(subscription),JSON.stringify(payload),{TTL:3600,urgency:'normal',topic:payload.tag,vapidDetails:{subject:APP_URL,publicKey:env.VAPID_PUBLIC_KEY,privateKey:env.VAPID_PRIVATE_KEY}});
+  // The notification tag is UI metadata, not an encoded Web Push Topic.
+  // Omit the optional collapse header rather than sending a noncanonical value.
+  const request=webpush.generateRequestDetails(validateSubscription(subscription),JSON.stringify(payload),{TTL:3600,urgency:'normal',vapidDetails:{subject:APP_URL,publicKey:env.VAPID_PUBLIC_KEY,privateKey:env.VAPID_PRIVATE_KEY}});
   stage='transport';
   // Workers fetch supports manual/follow, not the browser's redirect:error.
   // Never follow a redirect: credentials and ciphertext stay at the validated host.
   const response=await transport(request.endpoint,{method:'POST',headers:request.headers,body:request.body,redirect:'manual',signal:AbortSignal.timeout(12000)});
+  if(!response.ok&&response.status!==404&&response.status!==410){
+   // Keep only known public protocol error codes; never persist response bodies,
+   // device endpoints, authorization headers or other provider data.
+   const allowed=new Set(['BadWebPushTopic','BadAuthorizationHeader','BadJwtToken','BadTtl','BadUrgency','BadWebPushRequest','VapidPkHashMismatch','BadVapidPublicKey','BadPath','MethodNotAllowed','PayloadTooLarge','TooManyRequests','InternalServerError','ServiceUnavailable','Shutdown','IdleTimeout']);
+   const data=await response.json().catch(()=>null);
+   if(allowed.has(data?.reason))return response.status+'_'+data.reason;
+  }
   return response.status;
  }catch{
   throw Object.assign(new Error('Push failed'),{deliveryDiagnostic:stage});
