@@ -15,17 +15,29 @@ export function preferences(body){
  const topics=[...new Set(Array.isArray(body.topics)?body.topics:[])].filter(id=>CATEGORIES.some(c=>c.id===id)&&FACTS.some(f=>f.category===id));
  if(!topics.length||!['daily','few'].includes(body.frequency)||!Number.isInteger(body.hour)||body.hour<8||body.hour>20||typeof body.timezone!=='string'||body.timezone.length>80)throw Error('invalid_preferences');
  new Intl.DateTimeFormat('en',{timeZone:body.timezone}).format();
- return {topics,frequency:body.frequency,hour:body.hour,timezone:body.timezone};
+ return {topics,frequency:body.frequency,hour:body.hour,timezone:body.timezone,options:deliveryOptions(body.options)};
+}
+export function deliveryOptions(value={}){
+ if(!value||typeof value!=='object')throw Error('invalid_preferences');
+ const days=value.days??[0,1,2,3,4,5,6],quietStart=value.quietStart??21,quietEnd=value.quietEnd??8,pauseUntil=value.pauseUntil??0;
+ if(!Array.isArray(days)||!days.length||days.length>7||days.some(d=>!Number.isInteger(d)||d<0||d>6)||![quietStart,quietEnd].every(h=>Number.isInteger(h)&&h>=0&&h<=23)||!Number.isFinite(pauseUntil)||pauseUntil<0||pauseUntil>Date.now()+31*86400000)throw Error('invalid_preferences');
+ return {days:[...new Set(days)],quietStart,quietEnd,pauseUntil,syncRead:value.syncRead===true};
+}
+export function withinWindow(p,time){
+ const o=p.options||JSON.parse(p.delivery_options||'{}'),days=o.days||[0,1,2,3,4,5,6],start=o.quietStart??21,end=o.quietEnd??8;
+ const local=new Date(new Date(time).toLocaleString('en-US',{timeZone:p.timezone}));const h=local.getHours();
+ const quiet=start===end?false:start>end?(h>=start||h<end):(h>=start&&h<end);
+ return time>=(o.pauseUntil||0)&&days.includes(local.getDay())&&!quiet;
 }
 export function nextDelivery(p,now=Date.now()){
  const formatter=new Intl.DateTimeFormat('en-GB',{timeZone:p.timezone,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',hourCycle:'h23'});
  const parts=t=>Object.fromEntries(formatter.formatToParts(t).filter(x=>x.type!=='literal').map(x=>[x.type,Number(x.value)]));
  const local=parts(now),base=Date.UTC(local.year,local.month-1,local.day);
  const hours=p.frequency==='few'?[9,14,19]:[p.hour];
- for(let day=0;day<3;day++)for(const hour of hours){
+ for(let day=0;day<40;day++)for(const hour of hours){
   const nominal=base+day*86400000+hour*3600000;let utc=nominal;
   for(let i=0;i<3;i++){const v=parts(utc);const offset=Date.UTC(v.year,v.month-1,v.day,v.hour,v.minute)-utc;utc=nominal-offset;}
-  if(utc>now+1000)return utc;
+  if(utc>now+1000&&withinWindow(p,utc))return utc;
  }
  throw Error('schedule_failed');
 }

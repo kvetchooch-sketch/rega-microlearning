@@ -1,5 +1,10 @@
 export const DEFAULT_MIX=Object.freeze({personalized:.7,adjacent:.2,discovery:.1});
-export function blankProfile(){return {version:1,onboarded:false,interests:[],style:'mixed',cadence:'own',theme:'system',history:{},saved:[],current:null,activeDays:[],mix:{...DEFAULT_MIX}};}
+export function formatVerifiedDate(value){
+ const date=new Date(/^\d{4}-\d{2}-\d{2}$/.test(value)?value+'T12:00:00Z':value);
+ if(!Number.isFinite(date.getTime()))return 'תאריך לא זמין';
+ return new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(date);
+}
+export function blankProfile(){return {version:1,onboarded:false,interests:[],style:'mixed',cadence:'own',theme:'system',history:{},saved:[],current:null,activeDays:[],mix:{...DEFAULT_MIX},lessTopics:[],collections:[],reviewed:{},notificationSeen:[],syncRead:false};}
 export function dayKey(date=new Date()){return [date.getFullYear(),String(date.getMonth()+1).padStart(2,'0'),String(date.getDate()).padStart(2,'0')].join('-');}
 const safeID=id=>typeof id==='string'&&/^[a-z0-9-]{1,80}$/.test(id)&&!['constructor','prototype'].includes(id);
 export function normalizeProfile(value){
@@ -11,6 +16,11 @@ export function normalizeProfile(value){
  p.theme=['system','light','dark'].includes(value.theme)?value.theme:'system';
  p.saved=Array.isArray(value.saved)?[...new Set(value.saved.filter(safeID))]:[];
  p.current=safeID(value.current)?value.current:null;
+ p.lessTopics=Array.isArray(value.lessTopics)?[...new Set(value.lessTopics.filter(safeID))]:[];
+ p.notificationSeen=Array.isArray(value.notificationSeen)?[...new Set(value.notificationSeen.filter(safeID))].slice(-10000):[];
+ p.syncRead=value.syncRead===true;
+ if(Array.isArray(value.collections))p.collections=value.collections.filter(c=>c&&safeID(c.id)&&typeof c.name==='string').slice(0,50).map(c=>({id:c.id,name:c.name.trim().slice(0,50),facts:Array.isArray(c.facts)?[...new Set(c.facts.filter(safeID))]:[]}));
+ if(value.reviewed&&typeof value.reviewed==='object')for(const [id,date] of Object.entries(value.reviewed))if(safeID(id)&&typeof date==='string'&&Number.isFinite(Date.parse(date)))p.reviewed[id]=date;
  p.activeDays=Array.isArray(value.activeDays)?[...new Set(value.activeDays.filter(d=>/^\d{4}-\d{2}-\d{2}$/.test(d)))].sort():[];
  if(value.history&&typeof value.history==='object'&&!Array.isArray(value.history))for(const [id,h] of Object.entries(value.history)){
   if(!safeID(id)||!h||typeof h!=='object')continue;
@@ -40,9 +50,9 @@ export function affinity(profile,facts){
 }
 const adjacent={tech:['science','ideas'],science:['tech','world'],world:['people','money'],money:['world','skills'],people:['ideas','skills'],ideas:['science','people'],skills:['life','people'],life:['skills','people']};
 export function nextFact(facts,categories,profile,{rng=Math.random,now=new Date(),review=false}={}){
- const available=facts.filter(f=>isEligible(f,now)&&f.id!==profile.current&&(review||!profile.history[f.id]));
+ const available=facts.filter(f=>isEligible(f,now)&&f.id!==profile.current&&(review||(!profile.history[f.id]&&!profile.notificationSeen?.includes(f.id))));
  if(!available.length)return null;
- const scores=affinity(profile,facts), preferred=new Set([...profile.interests,...Object.keys(scores).filter(c=>scores[c]>1)]);
+ const scores=affinity(profile,facts), preferred=new Set([...profile.interests,...Object.keys(scores).filter(c=>scores[c]>1)].filter(c=>!profile.lessTopics?.includes(c)));
  const mix=isValidMix(profile.mix)?profile.mix:DEFAULT_MIX;
  const groups=new Set(categories.filter(c=>preferred.has(c.id)).flatMap(c=>adjacent[c.group]||[]));
  const roll=rng();let pool;
@@ -50,7 +60,8 @@ export function nextFact(facts,categories,profile,{rng=Math.random,now=new Date(
  else if(roll<mix.personalized+mix.adjacent)pool=available.filter(f=>!preferred.has(f.category)&&groups.has(categories.find(c=>c.id===f.category)?.group));
  else pool=available.filter(f=>!preferred.has(f.category));
  if(!pool.length)pool=available;
- const weights=pool.map(f=>Math.max(.08,Math.exp(Math.max(-3,Math.min(3,scores[f.category]||0))*.4))*(profile.style===f.kind?1.6:1));
+ const recent=Object.entries(profile.history).sort((a,b)=>String(b[1].shownAt).localeCompare(String(a[1].shownAt))).slice(0,3).map(([id])=>facts.find(f=>f.id===id)?.category);
+ const weights=pool.map(f=>Math.max(.08,Math.exp(Math.max(-3,Math.min(3,scores[f.category]||0))*.4))*(profile.style===f.kind?1.6:1)*(profile.lessTopics?.includes(f.category)?.2:1)*(recent.filter(c=>c===f.category).length>=2?.4:1));
  let pick=rng()*weights.reduce((a,b)=>a+b,0);
  for(let i=0;i<pool.length;i++){pick-=weights[i];if(pick<0)return pool[i];}
  return pool.at(-1);

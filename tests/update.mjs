@@ -4,9 +4,9 @@ import http from 'node:http';
 import fs from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import {FACTS} from '../dist/content.mjs';
-const previous='35b301506090856a1260aa6738b5c880ad43fdbb';
+const previous=process.env.PREVIOUS_RELEASE||'a4c5428';
 const oldFiles=new Map();
-for(const name of ['index.html','style.css','app.mjs','core.mjs','content.mjs','sw.js','manifest.webmanifest','icon-192.png','icon-512.png'])oldFiles.set(name,execFileSync('git',['show',previous+':dist/'+name]));
+for(const name of execFileSync('git',['ls-tree','--name-only',previous+':dist'],{encoding:'utf8'}).trim().split('\n'))oldFiles.set(name,execFileSync('git',['show',previous+':dist/'+name]));
 let upgraded=false;
 const server=http.createServer(async(req,res)=>{
  try{
@@ -41,7 +41,7 @@ try{
  assert.deepEqual(profile.saved,old.saved);assert.deepEqual(profile.interests,old.interests);
  assert.equal(profile.history[profile.current].knowledge,'learned');
  await page.locator('[data-route=settings]').click();
- await expect(page.locator('#main')).toContainText('26.09.2026');
+ await expect(page.locator('#main')).toContainText('28.09.2026');
  await page.locator('[data-action=update]').click();
  await expect(page.locator('.fact-card')).toBeVisible();
  await context.setOffline(true);await page.reload();

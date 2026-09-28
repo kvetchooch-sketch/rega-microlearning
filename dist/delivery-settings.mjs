@@ -1,0 +1,10 @@
+export const defaultDelivery=()=>({days:[0,1,2,3,4,5,6],quietStart:21,quietEnd:8,pauseUntil:0,syncRead:false});
+export function deliveryFields(state){
+ const o={...defaultDelivery(),...state.options};
+ const hours=(id,value)=>`<select id="${id}">${Array.from({length:24},(_,i)=>`<option value="${i}" ${i===value?'selected':''}>${String(i).padStart(2,'0')}:00</option>`).join('')}</select>`;
+ return `<details class="delivery-settings"><summary>ימים, שעות שקטות ופרטיות</summary><fieldset><legend>באילו ימים?</legend><div class="day-options">${['א׳','ב׳','ג׳','ד׳','ה׳','ו׳','שבת'].map((d,i)=>`<label class="check-row"><input type="checkbox" name="push-day" value="${i}" ${o.days.includes(i)?'checked':''}>${d}</label>`).join('')}</div><button type="button" class="text-btn" data-delivery="weekdays">ימי חול בלבד · א׳–ה׳</button></fieldset><div class="filter-row"><label>שקט החל מ־${hours('quiet-start',o.quietStart)}</label><label>עד${hours('quiet-end',o.quietEnd)}</label></div><p class="small muted">אם שעת השליחה נמצאת בשעות השקטות, מדלגים עליה. אותה שעת התחלה וסיום מבטלת את השקט.</p><label class="check-row"><input type="checkbox" id="sync-read" ${o.syncRead?'checked':''}>מניעת כפילויות בין הפיד להתראות</label><p class="small muted">בהסכמה זו נשלחים לשירות מזהי הפריטים שפגשת ותחומי העניין שלך. התגובות, השמורים והאוספים נשארים במכשיר. הסנכרון מתבצע כשהאפליקציה מחוברת; קריאה ללא אינטרנט תסתנכרן בפתיחה הבאה.</p></details>${o.pauseUntil>Date.now()?'<p>ההתראות הרגילות מושהות כרגע.</p>':''}${state.active?`<button class="secondary" data-push="pause">${o.pauseUntil>Date.now()?'חידוש ההתראות':'השהיה לשבוע'}</button>`:''}`;
+}
+export function deliveryInput(state){
+ return {days:[...document.querySelectorAll('[name=push-day]:checked')].map(x=>Number(x.value)),quietStart:Number(document.querySelector('#quiet-start').value),quietEnd:Number(document.querySelector('#quiet-end').value),pauseUntil:state.options?.pauseUntil||0,syncRead:document.querySelector('#sync-read').checked};
+}
+document.addEventListener('click',event=>{if(event.target.closest('[data-delivery=weekdays]'))document.querySelectorAll('[name=push-day]').forEach(x=>x.checked=Number(x.value)<5);});

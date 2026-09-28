@@ -1,6 +1,6 @@
 importScripts('./notification.js');
-const CACHE='rega-v3-20260926-push';
-const FILES=['./','./index.html','./style.css','./app.mjs','./core.mjs','./content.mjs','./content-expansion.mjs','./push.mjs','./push-config.mjs','./notification.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
+const CACHE='rega-v4-20260928-growth';
+const FILES=['./','./index.html','./style.css','./app.mjs','./core.mjs','./growth.mjs','./delivery-settings.mjs','./content.mjs','./content-expansion.mjs','./push.mjs','./push-config.mjs','./notification.js','./manifest.webmanifest','./icon-192.png','./icon-512.png'];
 self.addEventListener('install',event=>{event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting()));});
 self.addEventListener('activate',event=>{event.waitUntil(Promise.all([caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('rega-')&&k!==CACHE).map(k=>caches.delete(k)))),self.clients.claim()]));});
 self.addEventListener('fetch',event=>{
@@ -10,7 +10,7 @@ self.addEventListener('fetch',event=>{
 self.addEventListener('push',event=>{
  let data;try{data=event.data?.json();}catch{}
  const notification=self.RegaNotification.build(data,self.registration.scope);
- event.waitUntil(self.registration.showNotification(notification.title,notification.options));
+ event.waitUntil(Promise.all([self.registration.showNotification(notification.title,notification.options),self.navigator.setAppBadge?.(1).catch(()=>{})]));
 });
 self.addEventListener('notificationclick',event=>{
  event.notification.close();

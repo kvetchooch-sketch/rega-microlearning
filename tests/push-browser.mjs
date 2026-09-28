@@ -3,7 +3,7 @@ import {chromium,webkit,expect} from '@playwright/test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
 import {readFile} from 'node:fs/promises';
-let remote=null,testCount=0,deleted=false;
+let remote=null,testCount=0,deleted=false,syncData=null;
 const server=http.createServer(async(req,res)=>{
  try{
   const path=new URL(req.url,'http://localhost').pathname;
@@ -15,8 +15,9 @@ const server=http.createServer(async(req,res)=>{
    else if(path.endsWith('/subscription')&&req.method==='DELETE'){remote=null;deleted=true;data={active:false};}
    else if(path.endsWith('/subscription')&&req.method==='POST'){
     if(!remote&&req.headers['x-enrollment-code']!=='test-code'){status=403;data={error:'invalid_code'};}
-    else{remote=JSON.parse(raw);assert.deepEqual(Object.keys(remote).sort(),['frequency','hour','subscription','timezone','topics']);data={active:true,nextAt:Date.now()+86400000};}
-   }else if(path.endsWith('/test')){testCount++;data=testCount===1?{queued:true}:{error:'test_cooldown'};status=testCount===1?200:429;}
+    else{remote=JSON.parse(raw);assert.deepEqual(Object.keys(remote).sort(),['frequency','hour','options','subscription','timezone','topics']);data={active:true,nextAt:Date.now()+86400000};}
+   }else if(path.endsWith('/sync')){syncData=JSON.parse(raw);data={sent:['moon-reflection']};}
+   else if(path.endsWith('/test')){testCount++;data=testCount===1?{queued:true}:{error:'test_cooldown'};status=testCount===1?200:429;}
    res.writeHead(status,{'Content-Type':'application/json'});res.end(JSON.stringify(data));return;
   }
   const name=path==='/'?'index.html':path.slice(1);if(!/^[a-z0-9.-]+$/.test(name))throw Error();
@@ -39,7 +40,7 @@ try{
     const sub={toJSON:()=>({endpoint:'https://web.push.apple.com/browser-test-only',keys:{p256dh:'B'+'A'.repeat(86),auth:'A'.repeat(22)}}),unsubscribe:async()=>{subscribed=false;window.didUnsubscribe=true;return true;}};
     Object.defineProperty(ServiceWorkerRegistration.prototype,'pushManager',{configurable:true,get:()=>({getSubscription:async()=>subscribed?sub:null,subscribe:async()=>{subscribed=true;return sub;}})});
    });
-   remote=null;testCount=0;deleted=false;
+   remote=null;testCount=0;deleted=false;syncData=null;
    const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='warning'||m.type()==='error')console.log(name,m.text());});
    await page.goto('http://127.0.0.1:4176/');await page.locator('[data-category=ai]').click();
    for(let i=0;i<3;i++)await page.locator('[data-action=continue]').click();
@@ -50,6 +51,12 @@ try{
    await page.locator('#push-code').fill('test-code');await page.locator('#push-frequency').selectOption('few');
    await page.locator('[data-push=enable]').click();await expect(page.locator('[data-push=test]')).toBeVisible();
    assert.deepEqual(remote.topics,['ai']);assert.equal(remote.frequency,'few');
+   assert.equal(syncData,null,'no reading history is sent without consent');
+   await page.locator('.delivery-settings summary').click();await page.locator('[data-delivery=weekdays]').click();await page.locator('#sync-read').check();await page.locator('#quiet-start').selectOption('20');
+   await page.locator('[data-push=enable]').click();await expect(page.locator('#push-status')).toContainText('נשמרו');
+   assert.deepEqual(remote.options.days,[0,1,2,3,4]);assert.equal(remote.options.quietStart,20);assert.equal(remote.options.syncRead,true);assert.deepEqual(syncData.topics,['ai']);assert.ok(syncData.read.length);assert.deepEqual(Object.keys(syncData).sort(),['read','topics']);
+   await page.locator('[data-push=pause]').click();await expect(page.locator('[data-push=pause]')).toContainText('חידוש');assert.ok(remote.options.pauseUntil>Date.now());
+   await page.locator('[data-push=pause]').click();await expect(page.locator('[data-push=pause]')).toContainText('השהיה');assert.equal(remote.options.pauseUntil,0);
    await page.locator('[data-push=test]').click();await expect(page.locator('#push-status')).toContainText('בדיקה נקבעה');
    await page.locator('[data-push=test]').click();await expect(page.locator('#push-status')).toContainText('חמש דקות');
    await page.reload();await page.locator('[data-route=settings]').click();await expect(page.locator('#push-frequency')).toHaveValue('few');

@@ -1,5 +1,7 @@
 # Validation performed · 26 September 2026
 
+This report preserves chronological results. See the final section for the current release and the user's later iPhone-delivery confirmation.
+
 13 Node regression tests passed, including minimum four cards per selectable topic, distinct titles, beginner AI wording, 100 randomized first-card selections for each selectable category, full-library nonrepetition, explicit review, idempotent reactions, reversible saves, storage round trips/failures, expired content, malformed input, and streak expiration.
 
 Four complete isolated mobile browser journeys passed:
@@ -37,3 +39,18 @@ Synthetic service tests and desktop tests are not proof of end-to-end iPhone del
 ## Apple delivery correction · 27 September 2026
 
 The first real-device attempt was rejected with HTTP 400. The sender was passing the UI notification tag (`rega-test` / `rega-fact`) unchanged as the optional Web Push Topic header; these are not canonical base64url values. Removed that optional header without changing the visible notification tag. Added allowlisted Apple protocol error diagnostics, never raw response bodies or device identifiers, while preserving numeric 404/410 cleanup behavior. All 26 tests pass, including regression assertions for the omitted header and safe diagnostics. After deploying the correction and requeuing one failed test, the real registration reports `test_accepted`: the provider accepted the push. Device display and tapping still require user confirmation. A subsequent user-requested test was observed queued separately; no extra retry was added.
+
+## Growth release · 28 September 2026
+
+- The user subsequently confirmed that the iPhone notification appeared. No new physical-device test is claimed for this release.
+- 37 Node regression tests pass, including source publication gates, 250 source-checked cards / 20 populated categories, precise timestamp formatting, backward-compatible backups, collections, weekly review limits, less-topic behavior, opt-in read synchronization, read-ID erasure, selected weekdays/quiet times/pause, single-device invitations and enrollment throttling.
+- Four complete 250-card browser journeys pass (Chromium and WebKit, each at 390px and 320px): no normal-feed repeats, reaction/bookmark persistence, sources, preference changes, explicit review, cancelled deletion, dark mode and cached reload. Chromium uses offline emulation; WebKit tests an unavailable isolated origin because of the previously documented emulator issue.
+- Two additional growth journeys pass: search/category/collection intersections, HTML-safe names, collection membership/removal without losing saved facts, discovery controls, backup download and restore, invalid-backup rejection, optional review completion, correction history and local-editor draft approval gate.
+- Two mocked notification journeys pass: direct-gesture permission, error states, selected weekdays, quiet hours, pause/resume, opt-in sync payload limited to IDs/topics, reload, deletion and deep links. Expected 403/429 responses exercise rejection/rate-limit UI; they are not runtime failures.
+- Upgrade from the exact published commit `a4c5428` passes with bookmarks, interests and reactions retained, then offline reload. Old raw backups and the new versioned envelope are both supported.
+- Bugs found and fixed during these runs: calendar dates at Israel midnight were initially future UTC dates; the existing display formatter initially rejected full ISO timestamps and stopped rendering some cards. Added dual-format regression tests and repeated the complete browser sweeps. A within-pool weight alone did not sufficiently reduce a sole preferred topic; excluded downweighted topics from the personalized pool. The pending notification status now clears the prior success message to prevent a stale-success indication during saves.
+- The source audit checked 88 original URLs and found three unavailable NIST paths. Claims were re-reviewed against alternative official pages and the corrections logged. All alternatives are reachable through the research browser; ISO returns 403 to the automated fetch checker (bot protection), so that URL remains a manual-availability check, not a dead-link assertion. HTTP success does not verify content.
+- Production D1 additive migration applied once, preserving the existing device. Worker release `1836968b-4dfa-49a3-bb8b-a368295199b9` deployed with the existing VAPID keys and Free-plan configuration.
+- A live API smoke test created a temporary synthetic subscription with its own single-use invite, verified schedule/pause, consent sync, disabling consent and deletion, then removed both test rows. It did not request or send a notification and did not modify the user's registration.
+
+Remaining boundaries: no full physical-device VoiceOver audit, no native binary/widgets/Live Activities, no exact-time push guarantee, no paid infrastructure or automatic factual re-verification. The pack is 250 reviewed cards rather than filling the proposed 300–500 range with unverified material.

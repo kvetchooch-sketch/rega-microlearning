@@ -1,0 +1,6 @@
+ALTER TABLE devices ADD COLUMN delivery_options TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE devices ADD COLUMN read_ids TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE devices ADD COLUMN last_sync INTEGER NOT NULL DEFAULT 0;
+CREATE TABLE IF NOT EXISTS invitations (code_hash TEXT PRIMARY KEY, expires_at INTEGER NOT NULL, used_by TEXT);
+CREATE TABLE IF NOT EXISTS rate_limits (key TEXT PRIMARY KEY, count INTEGER NOT NULL, expires_at INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS rates_expiry ON rate_limits(expires_at);

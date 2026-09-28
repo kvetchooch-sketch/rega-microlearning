@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {blankProfile,normalizeProfile,loadProfile,saveProfile,isEligible,nextFact,ensureInteraction,setReaction,toggleSaved,affinity,statistics,isValidMix} from '../dist/core.mjs';
 import {FACTS,CATEGORIES,AVAILABLE_CATEGORIES} from '../dist/content.mjs';
-const now=new Date('2026-09-26T12:00:00Z');
+const now=new Date('2026-09-28T12:00:00Z');
 
 test('every offered topic has at least four distinct readable cards',()=>{
  for(const c of AVAILABLE_CATEGORIES)assert.ok(FACTS.filter(f=>f.category===c.id).length>=4,c.id);

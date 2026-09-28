@@ -59,8 +59,9 @@ for(const [name,type,options] of [['chromium',chromium,process.platform==='win32
   await page.locator('[data-category=technology]').click();
   await page.locator('[data-action=cancel-edit]').click();
   await page.locator('[data-route=feed]').click();
+  await page.evaluate(()=>{window.testClicks=[];for(const type of ['pointerdown','pointerup','click'])document.addEventListener(type,e=>{window.testClicks.push({type,target:e.target.closest('button')?.dataset?.action||e.target.tagName,y:scrollY});window.testClicks=window.testClicks.slice(-18);},true);});
   const seen=new Set([firstID]);
-  for(let i=0;i<FACTS.length-1;i++){await page.locator('[data-action=next]').click();const id=await page.locator('.fact-card').getAttribute('data-fact');assert.ok(!seen.has(id),'duplicate in normal feed');seen.add(id);}
+  for(let i=0;i<FACTS.length-1;i++){const prev=await page.locator('.fact-card').getAttribute('data-fact');await page.locator('[data-action=next]').click();try{await expect(page.locator('.fact-card')).not.toHaveAttribute('data-fact',prev);}catch(e){console.log('UI diagnostic',await page.evaluate(()=>({clicks:window.testClicks,current:JSON.parse(localStorage.getItem('rega.profile.v1')).current})));throw e;}const id=await page.locator('.fact-card').getAttribute('data-fact');assert.ok(!seen.has(id),'duplicate in normal feed');seen.add(id);}
   await page.locator('[data-action=next]').click();await expect(page.locator('.empty h2')).toHaveText('הגעת לסוף האוסף');
   await page.locator('[data-action=review]').click();await expect(page.locator('.review-label')).toBeVisible();
   await page.locator('[data-route=settings]').click();await page.locator('[data-action=reset]').click();await page.locator('[data-action=close]').click();

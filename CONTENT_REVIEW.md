@@ -1,6 +1,6 @@
 # Content review · 25 September 2026
 
-Each shipped record in dist/content.mjs was checked against the source associated with it. Labels say “checked against source,” not “human verified.” The why-it-matters section is explicitly editorial interpretation. No AI publishing service exists.
+Each shipped record in dist/content.mjs was checked against the source associated with it. Labels say “checked against source,” not “human verified.” The why-it-matters section is explicitly editorial interpretation. No AI publishing service exists. The sections below preserve the release history; the current catalog is described in the final section.
 
 Evidence reviewed:
 
@@ -41,3 +41,13 @@ Sources retrieved or checked through primary-source search excerpts on this date
 - National Archives: original 1787 text, Article I sections 1–3 and 9. Cards explicitly describe the historical document rather than asserting all provisions as current law.
 
 The two original AI-related cards were rewritten in everyday Hebrew without changing the sourced claim. New cards retain their actual 26 September verification date; old records retain 25 September. The app formats the stored date rather than displaying a fixed date for every card. Editorial implications remain labeled in the detail screen.
+
+## Reviewed expansion · 27–28 September 2026
+
+The current pack has 250 approved records across 20 populated topics. `content/catalog.json` retains review evidence notes; `content/reviewed-additions*.mjs` records the editorial source/claim batches. `content/README.md` documents editing, approval, correction and re-review. The larger proposed 300–500 count is not treated as justification to publish unsupported filler. Empty category definitions are not selectable.
+
+Primary/authoritative sources reviewed include NASA (planets, missions, Moon and seasons), NOAA (tides, salt, latitude, coral and turtles), USGS (water and raindrops), National Archives (explicitly historical constitutional text), CERN and Nobel records (scientific history), NIST/ISO (AI), MDN (internet basics), CISA/FTC (security and practical shopping), SEC/CFPB (general financial concepts), SBA (planning), W3C/Cornell (communication and research), OpenStax (mathematical/statistical/economic definitions) and research educators Learning Scientists (qualified learning guidance). No current investment returns, officeholders, prices, legal prescriptions or model rankings are asserted.
+
+New explanations use short Hebrew sentences and original examples. Learning-effect claims are explicitly qualified; financial entries are general education, not individualized recommendations. Political entries describe documented historical provisions, not political preferences. Source labels identify provenance rather than asserting independent expert review. Third-party license claims were removed from labels: we link sources, not reproduce textbook passages or diagrams.
+
+An 88-URL availability audit found three unavailable source URLs. Nine AI records were rechecked using NIST AIRC's trustworthiness section, NIST's RAG glossary, ISO's AI introduction and Microsoft's official prompt-writing guide. Corrections retain their reason and new verification timestamp in the catalog and are visible in-app. Availability checks do not substitute for reviewing the claim.

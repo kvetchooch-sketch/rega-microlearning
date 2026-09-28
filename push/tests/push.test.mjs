@@ -8,12 +8,15 @@ import vm from 'node:vm';
 import webpush from 'web-push';
 import {preferences,nextDelivery,validateSubscription,selectFact,ORIGIN,APP_URL,hash} from '../policy.mjs';
 import {handleRequest,scheduled,sendPush} from '../worker.mjs';
+import {FACTS} from '../../dist/content.mjs';
+import {isEligible} from '../../dist/core.mjs';
 const now=Date.parse('2026-09-26T06:00:00Z');
 const pair=webpush.generateVAPIDKeys();
 function fixture(){
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../schema.sql',import.meta.url),'utf8'));
  const DB={prepare(sql){return {bind(...args){return {async first(){return db.prepare(sql).get(...args)||null;},async all(){return {results:db.prepare(sql).all(...args)};},async run(){return {meta:{changes:Number(db.prepare(sql).run(...args).changes)}};}};}};}};
- return {db,env:{DB,VAPID_PUBLIC_KEY:pair.publicKey,VAPID_PRIVATE_KEY:pair.privateKey,ENROLLMENT_CODE:'test-only-invite'}};
+ db.exec(readFileSync(new URL('../migrations/0002_preferences.sql',import.meta.url),'utf8'));
+ return {db,env:{DB,VAPID_PUBLIC_KEY:pair.publicKey,VAPID_PRIVATE_KEY:pair.privateKey,ENROLLMENT_CODE:'test-only-invite',ALLOW_LEGACY_ENROLLMENT:'true'}};
 }
 const token=randomBytes(32).toString('base64url');
 function subscription(endpoint='https://web.push.apple.com/test-only-endpoint'){
@@ -37,7 +40,7 @@ test('daily/few schedule respects local times and DST changes',()=>{
 });
 test('content selector uses approved facts, chosen topics, no repeated notifications',()=>{
  const sent=[];assert.equal(selectFact(['ai'],sent,now,()=>0).category,'ai');
- for(let i=0;i<62;i++){const f=selectFact(['ai'],sent,now,()=>0);assert.ok(f);assert.ok(!sent.includes(f.id));sent.push(f.id);}
+ for(let i=0;i<FACTS.filter(f=>isEligible(f,new Date(now))).length;i++){const f=selectFact(['ai'],sent,now,()=>0);assert.ok(f);assert.ok(!sent.includes(f.id));sent.push(f.id);}
  assert.equal(selectFact(['ai'],sent,now),null);
 });
 test('registration requires pairing code, can be updated by owner and deleted',async()=>{
@@ -52,7 +55,7 @@ test('registration requires pairing code, can be updated by owner and deleted',a
 });
 test('unconfigured service fails closed and rejects cross-origin enrollment',async()=>{
  const {db,env}=fixture();try{
-  assert.equal((await handleRequest(request('/subscription','POST',body()),{...env,ENROLLMENT_CODE:undefined},now)).status,503);
+  assert.equal((await handleRequest(request('/subscription','POST',body()),{...env,ENROLLMENT_CODE:undefined},now)).status,403);
   const req=request('/subscription');req.headers.set('Origin','https://evil.test');assert.equal((await handleRequest(req,env,now)).status,403);
  }finally{db.close();}
 });
@@ -110,6 +113,33 @@ test('provider diagnostics are allowlisted and expired endpoints keep numeric cl
   for(const [status,reason,expected] of [[400,'BadWebPushTopic','400_BadWebPushTopic'],[400,'BadWebPushRequest','400_BadWebPushRequest'],[400,'private endpoint or token',400],[404,'BadPath',404],[410,'BadPath',410]]){
    assert.equal(await sendPush(env,body().subscription,{tag:'rega-test'},async()=>Response.json({reason},{status})),expected);
   }
+ }finally{db.close();}
+});
+test('delivery windows respect selected weekdays, pause and quiet time',()=>{
+ const p={timezone:'Asia/Jerusalem',frequency:'daily',hour:9,options:{days:[0,1,2,3,4],quietStart:21,quietEnd:8,pauseUntil:0}};
+ assert.equal(new Date(nextDelivery(p,Date.parse('2026-10-01T08:00Z'))).toISOString(),'2026-10-04T06:00:00.000Z');
+ p.options.pauseUntil=Date.parse('2026-10-07T00:00Z');assert.equal(new Date(nextDelivery(p,Date.parse('2026-10-01T08:00Z'))).toISOString(),'2026-10-07T06:00:00.000Z');
+ p.options.quietEnd=10;assert.throws(()=>nextDelivery(p,Date.parse('2026-10-01T08:00Z')));
+});
+test('read synchronization requires consent, excludes encountered facts and deletes data when disabled',async()=>{
+ const {db,env}=fixture();try{
+  await handleRequest(request('/subscription','POST',body()),env,now);
+  assert.equal((await handleRequest(request('/sync','POST',{read:[],topics:['ai']}),env,now)).status,403);
+  await handleRequest(request('/subscription','POST',{...body(),options:{syncRead:true}}),env,now);
+  const ids=FACTS.filter(f=>isEligible(f,new Date(now))).map(f=>f.id);
+  assert.equal((await handleRequest(request('/sync','POST',{read:ids,topics:['ai']}),env,now)).status,200);
+  db.prepare('UPDATE devices SET next_at=?').run(now);await scheduled(env,now,async()=>{throw Error('exhausted content must not send');});
+  assert.equal(db.prepare('SELECT last_status FROM devices').get().last_status,'exhausted');
+  await handleRequest(request('/subscription','POST',{...body(),options:{syncRead:false}}),env,now);assert.equal(db.prepare('SELECT read_ids FROM devices').get().read_ids,'[]');
+ }finally{db.close();}
+});
+test('public enrollment uses single-device expiring invites and rate-limits guessing',async()=>{
+ const {db,env}=fixture();env.ALLOW_LEGACY_ENROLLMENT='false';try{
+  db.prepare('INSERT INTO invitations(code_hash,expires_at) VALUES (?,?)').run(await hash('test-only-invite'),now+60000);
+  assert.equal((await handleRequest(request('/subscription','POST',body()),env,now)).status,200);
+  assert.equal((await handleRequest(request('/subscription','POST',body(),'test-only-invite',randomBytes(32).toString('base64url')),env,now)).status,403);
+  let status;for(let i=0;i<5;i++)status=(await handleRequest(request('/subscription','POST',body(),'bad',randomBytes(32).toString('base64url')),env,now)).status;
+  assert.equal(status,429);
  }finally{db.close();}
 });
 test('notification helper prevents external navigation and degrades malformed/expired payloads visibly',()=>{
